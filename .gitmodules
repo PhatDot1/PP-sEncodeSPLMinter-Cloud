@@ -1,0 +1,3 @@
+[submodule "SFT"]
+	path = SFT
+	url = https://github.com/PhatDot1/SFT_Template_Encode.git
