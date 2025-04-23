@@ -19,7 +19,6 @@
     "airtable": "^0.12.2",
     "axios": "^1.7.2",
     "bitly": "^7.1.2",
-    "canvas": "^2.11.2",
     "cm-v3-demo": "file:",
     "dotenv": "^16.5.0",
     "ethers": "^6.13.2",
