@@ -118,8 +118,10 @@ async function drawCertificate(
   const fontR  = await Jimp.loadFont(FONT_REGULAR_PATH);
   const fontSB = await Jimp.loadFont(FONT_SEMIBOLD_PATH);
   const m = 80;
+  const MAX_PROG_WIDTH = 900; // Use this to change the maximum programme title width before wrapping
+  const x = 50; // Can change the X here to adjust the programme text verticality depending on how many times it wraps
 
-  img.print(fontSB, m, img.bitmap.height - m - 0, { text: programme.toUpperCase() });
+  img.print(fontSB, m, img.bitmap.height - m - x, { text: programme.toUpperCase()}, MAX_PROG_WIDTH ); 
   img.print(fontR,  m, img.bitmap.height/2 + m*1.5, { text: level.toUpperCase() });
 
   const tag = `#${certId}`;
