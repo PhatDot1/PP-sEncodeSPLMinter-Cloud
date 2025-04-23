@@ -1,4 +1,4 @@
-// orchestrator.ts
+// wrapped in outer polling loop rather than continuous runs, to force compatibility with app platform
 
 import 'dotenv/config';
 import Airtable from 'airtable';
@@ -35,39 +35,45 @@ async function runScript(script: string) {
 }
 
 function sleep(ms: number) {
-  return new Promise(r => setTimeout(r, ms));
+  return new Promise<void>(r => setTimeout(r, ms));
+}
+
+// one full pass through all three parts
+async function cycle() {
+  // Part 1: batch Ready Sol → SPL Loaded
+  while (await countByStatus('Ready Sol') > 0) {
+    console.log(`\n🔥 ${await countByStatus('Ready Sol')} Ready Sol → processing batch…`);
+    await runScript('CloudPt1.ts');
+    await sleep(30_000);
+  }
+  console.log('✅ No more Ready Sol.');
+
+  // Part 2: mint SPL Loaded → SPL Minted
+  while (await countByStatus('SPL Loaded') > 0) {
+    console.log(`\n🔨 ${await countByStatus('SPL Loaded')} SPL Loaded → minting one…`);
+    await runScript('CloudPt2.ts');
+    await sleep(30_000);
+  }
+  console.log('✅ No more SPL Loaded.');
+
+  // Part 3: transfer/email SPL Minted
+  while (await countByStatus('SPL Minted') > 0) {
+    console.log(`\n✉️ ${await countByStatus('SPL Minted')} SPL Minted → transferring one…`);
+    await runScript('CloudPt3.ts');
+    await sleep(30_000);
+  }
+  console.log('✅ No more SPL Minted.');
 }
 
 (async () => {
-  try {
-    // Part 1: batch through Ready Sol → SPL Loaded
-    while (await countByStatus('Ready Sol') > 0) {
-      console.log(`\n🔥 ${await countByStatus('Ready Sol')} Ready Sol remaining → processing batch…`);
-      await runScript('CloudPt1.ts');
-      console.log('Waiting 30 s before next batch…');
-      await sleep(30_000);
+  console.log('🛡️  Orchestrator started, polling every 60 s.');
+  while (true) {
+    try {
+      await cycle();
+    } catch (err) {
+      console.error('❌ Orchestrator cycle error:', err);
     }
-    console.log('✅ All Ready Sol batches done.');
-
-    // Part 2: mint one‑by‑one SPL Loaded → SPL Minted
-    while (await countByStatus('SPL Loaded') > 0) {
-      console.log(`\n🔨 ${await countByStatus('SPL Loaded')} SPL Loaded remaining → minting one…`);
-      await runScript('CloudPt2.ts');
-      console.log('Waiting 30 s before next mint…');
-      await sleep(30_000);
-    }
-    console.log('✅ All SPL Loaded minting done.');
-
-    // Part 3: transfer & email one‑by‑one SPL Minted → Success
-    while (await countByStatus('SPL Minted') > 0) {
-      console.log(`\n✉️ ${await countByStatus('SPL Minted')} SPL Minted remaining → transferring one…`);
-      await runScript('CloudPt3.ts');
-      console.log('Waiting 30 s before next transfer…');
-      await sleep(30_000);
-    }
-    console.log('\n🎉 All done through Part 3!');
-  } catch (err) {
-    console.error('❌ Orchestrator error:', err);
-    process.exit(1);
+    console.log('\n⏱  Waiting 60 s before next full cycle…');
+    await sleep(60_000);
   }
 })();
